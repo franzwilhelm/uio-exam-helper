@@ -10,16 +10,24 @@ import (
 	"strings"
 
 	"code.sajari.com/docconv"
+	"github.com/franzwilhelm/uio-exam-helper/db"
 	log "github.com/sirupsen/logrus"
 )
 
 type Resource struct {
+	ID        int    `json:"id"`
 	Name      string `json:"name"`
-	URL       string `json:"URL"`
-	Filepath  string `json:"filepath"`
+	URL       string `json:"URL" gorm:"unique_index"`
 	SubjectID string `json:"subjectID"`
 }
 
+func (r *Resource) Folder() string {
+	return fmt.Sprintf("resources/%s", r.SubjectID)
+}
+func (r *Resource) FilePath() string {
+	return fmt.Sprintf("%s/%s", r.Folder(), r.Name)
+
+}
 func (r *Resource) UseURL(url string) {
 	r.URL = url
 	tokens := strings.Split(url, "/")
@@ -31,17 +39,15 @@ func (r *Resource) UseURL(url string) {
 }
 
 func (r *Resource) IsDownloaded() bool {
-	_, err := os.Stat(r.Name)
+	_, err := os.Stat(r.FilePath())
 	return err == nil
 }
 
 func (r *Resource) Download() error {
-	if r.IsDownloaded() {
-		log.Warn("Skipping download! Resource already exists: ", r.Name)
-		return nil
+	if err := os.MkdirAll(r.Folder(), 0777); err != nil && !os.IsExist(err) {
+		return err
 	}
-
-	file, err := os.Create(r.Name)
+	file, err := os.Create(r.FilePath())
 	defer file.Close()
 	if err != nil {
 		log.WithError(err).Error("Error while creating " + r.Name)
@@ -93,6 +99,10 @@ func (r *Resource) GenerateWordTree() {
 			fmt.Printf("%v: %s\n", i+1, arr)
 		}
 	}
+}
+
+func ResourceByURL(url string) (r Resource, err error) {
+	return r, db.Default.Where("url = ?", url).First(&r).Error
 }
 
 func words(lines []string) (words []string) {

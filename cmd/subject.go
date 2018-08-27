@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"github.com/franzwilhelm/uio-exam-helper/model"
+	"github.com/franzwilhelm/uio-exam-helper/db/model"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -39,13 +39,20 @@ var subjectCmd = &cobra.Command{
 		subjectID := args[0]
 		log.Infof("Subject %s specified", subjectID)
 
-		subject := model.NewSubject(subjectID, faculty, study)
-		subject.PreloadResources()
-		for _, r := range subject.Resources {
-			r.Download()
-			// r.GenerateWordTree()
-			r.Delete()
+		subject, err := model.GetSubjectByID(subjectID)
+		if err != nil {
+			subject, err = model.NewSubject(subjectID, faculty, study)
+			if err != nil {
+				log.WithError(err).Fatal("Could not create subject")
+			}
 		}
+		if err := subject.FetchLatestResources(); err != nil {
+			log.WithError(err).Fatal("Could not fetch latest resources")
+		}
+		if err := subject.Refresh(); err != nil {
+			log.WithError(err).Fatal("Could not refresh subject")
+		}
+		subject.DownloadResources()
 	},
 }
 
