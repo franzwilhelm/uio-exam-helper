@@ -98,6 +98,25 @@ func (s *Subject) DeleteResources() {
 	}
 }
 
+func (s *Subject) GenerateWordTree() ([][]string, error) {
+	var allWords []string
+	for _, r := range s.Resources {
+		words, err := r.GetWords()
+		if err != nil {
+			return nil, err
+		}
+		allWords = append(allWords, words...)
+	}
+	countMap := generateCountMap(allWords)
+	max := getMaxCount(countMap)
+	strs := make([][]string, max)
+
+	for key, value := range countMap {
+		strs[value-1] = append(strs[value-1], key)
+	}
+
+	return strs, nil
+}
 func (s *Subject) Refresh() error {
 	return db.Default.Preload("Resources").Where("id = ?", s.ID).First(s).Error
 }
