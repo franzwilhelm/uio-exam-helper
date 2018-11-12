@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"code.sajari.com/docconv"
+	"github.com/agnivade/levenshtein"
 	"github.com/franzwilhelm/uio-exam-helper/db"
 	log "github.com/sirupsen/logrus"
 )
@@ -115,10 +116,15 @@ func deleteSpecials(words []string) (processed []string, err error) {
 	return
 }
 
-func generateCountMap(a []string) map[string]int {
+type Group struct {
+	Count int
+	Words []string
+}
+
+func groupWords(a []string) []Group {
 	countMap := make(map[string]int)
 	for _, s := range a {
-		countMap[s] += 1
+		countMap[s]++
 	}
 
 	for _, word := range frequentWords {
@@ -128,17 +134,32 @@ func generateCountMap(a []string) map[string]int {
 	for _, word := range examWords {
 		delete(countMap, word)
 	}
-	return countMap
-}
 
-func getMaxCount(countMap map[string]int) int {
-	max := 0
-	for _, value := range countMap {
-		if value > max {
-			max = value
+	grouped := make(map[string]bool)
+	groups := make([]Group, 0)
+	for w1, c1 := range countMap {
+		if _, ok := grouped[w1]; ok {
+			continue
 		}
+		g := Group{
+			Count: c1,
+			Words: []string{w1},
+		}
+		for w2, c2 := range countMap {
+			if _, ok := grouped[w2]; ok {
+				continue
+			}
+			distance := levenshtein.ComputeDistance(w1, w2)
+			if distance == 1 || distance == 2 {
+				grouped[w2] = true
+				g.Count += c2
+				g.Words = append(g.Words, w2)
+			}
+		}
+		groups = append(groups, g)
 	}
-	return max
+
+	return groups
 }
 
 var frequentWords = []string{
@@ -146,5 +167,5 @@ var frequentWords = []string{
 }
 
 var examWords = []string{
-	"eksamen", "oppgave", "poeng", "svar", "svarene", "svaret", "løsningen", "fortsettes", "feil", "riktig", "universitetet", "universitet",
+	"eksamen", "oppgave", "poeng", "svar", "svarene", "svaret", "løsningen", "fortsettes", "feil", "riktig", "universitetet", "universitet", "finn", "løsning", "begrunn", "oppgavesettet", "dvs", "beregn", "bestem", "betrakt", "angi", "systemet", "deretter", "vis", "betegne", "minste", "definer", "tilhørende", "vedlegg", "begynner", "tillatte", "besvare", "sider", "eksamensdag", "hjelpemidler", "fakultet", "betrakter", "kontroller", "matematisknaturvitenskapelige", "hensyn", "lar", "variabel", "vanlige", "lik", "relativt", "består", "løsninger", "betegner", "alternativt", "definert", "merk", "spørsmålene", "oppgaven", "henvise", "hensiktsmessig", "notat", "utregning", "page", "løser", "setter", "lykke", "oppfyller", "examination", "sjekk", "henholdsvis", "vedlagte", "bestar", "løse", "forklar", "varierer", "kjernen", "spørsmalene", "generelle", "anta", "vedlagt", "bruk", "problem", "opplagt", "løsningene", "forrige", "feks", "vanlig", "bruker", "høyst", "mengden", "enhver", "best", "utskrift", "skriv", "løsningsforslag", "oppgitte", "oppgavene", "følgende", "deloppgaver", "definerer", "opptil", "tilsvarende", "ønsket",
 }

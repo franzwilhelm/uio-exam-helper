@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"strings"
 
@@ -98,7 +99,7 @@ func (s *Subject) DeleteResources() {
 	}
 }
 
-func (s *Subject) GenerateWordTree() ([][]string, error) {
+func (s *Subject) GenerateWordTree() ([]Group, error) {
 	var allWords []string
 	for _, r := range s.Resources {
 		words, err := r.GetWords()
@@ -107,15 +108,13 @@ func (s *Subject) GenerateWordTree() ([][]string, error) {
 		}
 		allWords = append(allWords, words...)
 	}
-	countMap := generateCountMap(allWords)
-	max := getMaxCount(countMap)
-	strs := make([][]string, max)
+	groups := groupWords(allWords)
 
-	for key, value := range countMap {
-		strs[value-1] = append(strs[value-1], key)
-	}
+	sort.Slice(groups[:], func(i, j int) bool {
+		return groups[i].Count > groups[j].Count
+	})
 
-	return strs, nil
+	return groups, nil
 }
 func (s *Subject) Refresh() error {
 	return db.Default.Preload("Resources").Where("id = ?", s.ID).First(s).Error

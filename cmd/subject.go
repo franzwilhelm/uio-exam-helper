@@ -56,16 +56,15 @@ var subjectCmd = &cobra.Command{
 			log.WithError(err).Fatal("Could not refresh subject")
 		}
 		subject.DownloadResources()
-		strs, err := subject.GenerateWordTree()
+		groups, err := subject.GenerateWordTree()
 		if err != nil {
 			log.WithError(err).Fatal("Could not generate word tree")
 		}
-		for i := len(strs) - 1; i >= count; i-- {
-			if len(strs[i]) > 0 {
-				for _, s := range strs[i] {
-					fmt.Println(s)
-				}
+		for _, group := range groups {
+			if group.Count <= count {
+				break
 			}
+			fmt.Printf("%v: %s\n", group.Count, group.Words)
 		}
 	},
 }
