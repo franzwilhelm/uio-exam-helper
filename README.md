@@ -2,10 +2,12 @@
 
 ## Installation
 
+This application requires go1.11 or higher to run
+
 ```bash
 go get github.com/franzwilhelm/uio-exam-helper
 cd github.com/franzwilhelm/uio-exam-helper
-dep ensure -v
+make install
 ```
 
 ## Usage
