@@ -47,15 +47,24 @@ func (s Subject) DiscoverNewResources() (resources []Resource, err error) {
 	}
 
 	// find all resource links
-	doc.Find(".vrtx-title-link").Each(func(index int, item *goquery.Selection) {
-		resource := Resource{SubjectID: s.ID}
-		url, _ := item.Attr("href")
-		if r, err := ResourceByURL(url); err == nil {
-			l.Warnf("Resource %s exists. Skipping db creation...", r.Name)
-			return
-		}
-		resource.UseURL(url)
-		resources = append(resources, resource)
+	doc.Find("#vrtx-main-user").Each(func(_ int, parent *goquery.Selection) {
+		parent.Find("a").Each(func(_ int, item *goquery.Selection) {
+			resource := Resource{SubjectID: s.ID}
+			url, _ := item.Attr("href")
+			if !strings.Contains(url, "pdf") {
+				return
+			}
+			if r, err := ResourceByURL(url); err == nil {
+				l.Warnf("Resource %s exists. Skipping db creation...", r.Name)
+				return
+			}
+
+			if strings.HasPrefix(url, "/") {
+				url = "https://uio.no" + url
+			}
+			resource.UseURL(url)
+			resources = append(resources, resource)
+		})
 	})
 	return resources, nil
 }
@@ -67,7 +76,7 @@ func (s *Subject) FetchLatestResources() error {
 		return err
 	}
 	for i := range resources {
-		err := db.Default.Create(&resources[i]).Error
+		err := db.Default.FirstOrCreate(&resources[i]).Error
 		if err != nil {
 			tx.Rollback()
 			s.Resources = nil

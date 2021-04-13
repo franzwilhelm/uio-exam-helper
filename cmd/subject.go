@@ -15,7 +15,9 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"github.com/franzwilhelm/uio-exam-helper/db/model"
 	log "github.com/sirupsen/logrus"
@@ -60,11 +62,17 @@ var subjectCmd = &cobra.Command{
 		if err != nil {
 			log.WithError(err).Fatal("Could not generate word tree")
 		}
+		f, err := os.Create(subject.Resources[0].Folder() + "/results.txt")
+		log.Warn(err)
+		defer f.Close()
+
+		w := bufio.NewWriter(f)
+
 		for _, group := range groups {
 			if group.Count <= count {
 				break
 			}
-			fmt.Printf("%v: %s\n", group.Count, group.Words)
+			fmt.Fprintf(w, "%v: %s\n", group.Count, group.Words)
 		}
 	},
 }

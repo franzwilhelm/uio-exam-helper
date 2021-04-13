@@ -22,7 +22,7 @@ func ConnectPostgres(dialect, connString string) (err error) {
 func init() {
 	connString := os.Getenv("DB_CONN_STRING")
 	if connString == "" {
-		connString = "host=localhost port=5433 sslmode=disable dbname=uio_exam_helper user=uio password=exam-helper"
+		connString = "host=localhost port=5432 sslmode=disable dbname=uio_exam_helper user=uio password=exam-helper"
 		log.
 			WithField("connString", connString).
 			Debug("DB_CONN_STRING env empty, falling back to default")

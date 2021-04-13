@@ -48,6 +48,7 @@ func (r *Resource) IsDownloaded() bool {
 
 func (r *Resource) Download() error {
 	if err := os.MkdirAll(r.Folder(), 0777); err != nil && !os.IsExist(err) {
+		log.WithError(err).Error("Error while creating folder " + r.Folder())
 		return err
 	}
 	file, err := os.Create(r.FilePath())
@@ -58,8 +59,12 @@ func (r *Resource) Download() error {
 	}
 
 	log.Infof("Downloading %s to %s", r.URL, r.Name)
-
+	log.Warn(r.URL)
 	response, err := http.Get(r.URL)
+	if response == nil {
+		log.Error("go not response from", r.URL)
+		return nil
+	}
 	defer response.Body.Close()
 	if err != nil {
 		log.WithError(err).Error("Error while downloading" + r.URL)
@@ -82,7 +87,8 @@ func (r *Resource) Delete() error {
 func (r *Resource) GetWords() ([]string, error) {
 	res, err := docconv.ConvertPath(r.FilePath())
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Error("Could not covert pdf to text", r.FilePath())
+		return []string{}, nil
 	}
 	lower := strings.ToLower(res.Body)
 	lines := strings.Split(lower, "\n")
